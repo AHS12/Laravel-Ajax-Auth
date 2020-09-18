@@ -4,7 +4,7 @@
 <div class="container">
     <div class="row justify-content-center">
         {{-- login --}}
-        <div class="col-md-8">
+        <div class="col-md-6">
             <div class="card">
                 <div class="card-header">{{ __('Login') }}</div>
 
@@ -82,11 +82,14 @@
             </div>
         </div>
         {{-- register --}}
-        <div class="col-md-8">
+        <div class="col-md-6">
             <div class="card">
                 <div class="card-header">{{ __('Register') }}</div>
 
                 <div class="card-body">
+                    <div id="register-error-div">
+
+                    </div>
                     <form id="registerForm">
                         @csrf
 
@@ -110,7 +113,7 @@
                                 class="col-md-4 col-form-label text-md-right">{{ __('E-Mail Address') }}</label>
 
                             <div class="col-md-6">
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror"
+                                <input id="register-email" type="email" class="form-control @error('email') is-invalid @enderror"
                                     name="email" value="{{ old('email') }}" required autocomplete="email">
 
                                 @error('email')
@@ -126,7 +129,7 @@
                                 class="col-md-4 col-form-label text-md-right">{{ __('Password') }}</label>
 
                             <div class="col-md-6">
-                                <input id="password" type="password"
+                                <input id="register-password" type="password"
                                     class="form-control @error('password') is-invalid @enderror" name="password"
                                     required autocomplete="new-password">
 
@@ -150,8 +153,10 @@
 
                         <div class="form-group row mb-0">
                             <div class="col-md-6 offset-md-4">
-                                <button type="submit" class="btn btn-primary">
-                                    {{ __('Register') }}
+                                <button type="submit" class="btn btn-primary" id="btn-register"
+                                    data-loading-text='<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...'
+                                    data-normal-text="Login">
+                                    <span class="ui-button-text">Register</span>
                                 </button>
                             </div>
                         </div>
@@ -376,6 +381,237 @@
                                     positionClass: "toast-bottom-right",
                                 });
                             btnLoadEnd("btn-login");
+                        }
+
+                    }
+                });
+
+                //console.log("validation success");
+            }
+        });
+
+
+               /**
+         * @name form onsubmit
+         * @description override the default form submission and submit the form manually.
+         *              also validate with .validate() method from jquery validation
+         * @parameter formid
+         * @return 
+         */
+         $('#registerForm').submit(function (e) {
+            e.preventDefault();
+        }).validate({
+            rules: {
+                register_password: {
+                    minlength: 6
+                },
+                password_confirmation: {
+                    minlength: 6,
+                    equalTo: "#register-password"
+                }
+            },
+            highlight: function (element) {
+                jQuery(element).closest('.form-control').addClass('is-invalid');
+            },
+            unhighlight: function (element) {
+                jQuery(element).closest('.form-control').removeClass('is-invalid');
+                jQuery(element).closest('.form-control').addClass('is-valid');
+            },
+
+            errorElement: 'div',
+            errorClass: 'invalid-feedback',
+            errorPlacement: function (error, element) {
+                if (element.parent('.input-group-prepend').length) {
+                    $(element).siblings(".invalid-feedback").append(error);
+                    //error.insertAfter(element.parent());
+                } else {
+                    error.insertAfter(element);
+                }
+            },
+            submitHandler: function (form) {
+
+
+                var formData = new FormData(form);
+                $.ajax({
+                    url: "{{ url('register') }}",
+                    method: "POST",
+                    data: formData,
+                    enctype: 'multipart/form-data',
+                    processData: false,
+                    cache: false,
+                    contentType: false,
+                    timeout: 600000,
+                    // dataType:'json',
+                    beforeSend: function () {
+                        btnLoadStart("btn-register");
+                    },
+                    complete: function () {
+                        btnLoadEnd("btn-register");
+                    },
+                    success: function (result) {
+                        console.log(result);
+                        if (result.auth) {
+                            toastr.success(
+                                "Registration Successful!",
+                                'Success!', {
+                                    timeOut: 2000,
+                                    closeButton: true,
+                                    progressBar: true,
+                                    positionClass: "toast-top-center",
+                                });
+                                
+                                redirect(result.intended,1000);
+                        }
+
+                    },
+                    error: function (jqXHR, exception) {
+                        var msg = '';
+                        if (jqXHR.status === 0) {
+                            msg = 'Not connect.Verify Network.';
+                            toastr.warning(
+                                msg,
+                                'Error!', {
+                                    timeOut: 5000,
+                                    closeButton: true,
+                                    progressBar: true,
+                                    positionClass: "toast-bottom-right",
+                                });
+
+                            btnLoadEnd("btn-register");
+                        } else if (jqXHR.status == 404) {
+                            msg = 'Requested page not found. [404]';
+                            toastr.warning(
+                                msg,
+                                'Error!', {
+                                    timeOut: 5000,
+                                    closeButton: true,
+                                    progressBar: true,
+                                    positionClass: "toast-bottom-right",
+                                });
+                            btnLoadEnd("btn-register");
+                        } else if (jqXHR.status == 413) {
+                            msg = 'Request entity too large. [413]';
+                            toastr.warning(
+                                msg,
+                                'Error!', {
+                                    timeOut: 5000,
+                                    closeButton: true,
+                                    progressBar: true,
+                                    positionClass: "toast-bottom-right",
+                                });
+                            btnLoadEnd("btn-register");
+                        } else if (jqXHR.status == 419) {
+                            msg = 'CSRF error or Unknown Status [419]';
+                            toastr.warning(
+                                msg,
+                                'Error!', {
+                                    timeOut: 5000,
+                                    closeButton: true,
+                                    progressBar: true,
+                                    positionClass: "toast-bottom-right",
+                                });
+                            btnLoadEnd("btn-register");
+                        } else if (jqXHR.status == 500) {
+                            msg = 'Internal Server Error [500].';
+                            toastr.warning(
+                                msg,
+                                'Error!', {
+                                    timeOut: 5000,
+                                    closeButton: true,
+                                    progressBar: true,
+                                    positionClass: "toast-bottom-right",
+                                });
+                            btnLoadEnd("btn-register");
+                        } else if (exception === 'parsererror') {
+                            msg = 'Requested JSON parse failed.';
+                            toastr.warning(
+                                msg,
+                                'Error!', {
+                                    timeOut: 5000,
+                                    closeButton: true,
+                                    progressBar: true,
+                                    positionClass: "toast-bottom-right",
+                                });
+                            btnLoadEnd("btn-register");
+                        } else if (exception === 'timeout') {
+                            msg = 'Time out error.';
+                            toastr.warning(
+                                msg,
+                                'Error!', {
+                                    timeOut: 5000,
+                                    closeButton: true,
+                                    progressBar: true,
+                                    positionClass: "toast-bottom-right",
+                                });
+                            btnLoadEnd("btn-register");
+                        } else if (exception === 'abort') {
+                            msg = 'Ajax request aborted.';
+                            toastr.warning(
+                                msg,
+                                'Error!', {
+                                    timeOut: 5000,
+                                    closeButton: true,
+                                    progressBar: true,
+                                    positionClass: "toast-bottom-right",
+                                });
+                            btnLoadEnd("btn-register");
+                        } else {
+                            console.log(jqXHR.responseJSON.errors);
+                            var errorMarkup = '';
+                            //jquery valiation
+                            var validator = $(form).validate();
+                            var objErrors = {};
+                            $.each(jqXHR.responseJSON.errors, function (key, val) {
+                                if (key == 'authFailed') {
+
+                                    errorMarkup +=
+                                        '<div class="alert alert-danger alert-dismissible fade show" role="alert">';
+                                    errorMarkup +=
+                                        '<span class="text-center">' + val +
+                                        '</span>';
+                                    errorMarkup +=
+                                        '<button type="button" class="close" data-dismiss="alert" aria-label="Close">';
+                                    errorMarkup +=
+                                        '<span aria-hidden="true">&times;</span>';
+                                    errorMarkup += '</button>';
+                                    errorMarkup += '</div>';
+
+                                    $('#register-error-div').append(errorMarkup);
+                                    validator.resetForm();
+
+                                } else {
+                                    objErrors[key] = val;
+                                }
+
+                            });
+                            validator.showErrors(objErrors);
+                            validator.focusInvalid();
+
+                            //toastr
+                            $.each(jqXHR.responseJSON.errors, function (key, val) {
+
+                                toastr.error(
+                                    val,
+                                    'Error!', {
+                                        timeOut: 8000,
+                                        closeButton: true,
+                                        progressBar: true,
+                                        positionClass: "toast-bottom-right",
+                                    });
+                            });
+
+                            //text error
+                            msg = 'Uncaught Error.\n' + jqXHR
+                                .responseText;
+                            toastr.warning(
+                                msg,
+                                'Error!', {
+                                    timeOut: 5000,
+                                    closeButton: true,
+                                    progressBar: true,
+                                    positionClass: "toast-bottom-right",
+                                });
+                            btnLoadEnd("btn-register");
                         }
 
                     }
